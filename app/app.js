@@ -6,6 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const sequelize = require('./config/db');
 const routes = require('./routes');
+const { sendResponse } = require('./helpers');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,17 +18,17 @@ app.use(helmet()); // Adds security headers to HTTP responses
 app.use(express.json()); // Parses incoming JSON data
 
 // Routes
-app.use('', (req, res, next) => {
+app.get('/', (req, res, next) => {
   res.json({
     message: ' NODEJS API V1',
   });
 })
+
 app.use('/api/v1', routes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
+  sendResponse(res, 500, { message: 'Something broke!', stack: err.stack });
 });
 
 sequelize
