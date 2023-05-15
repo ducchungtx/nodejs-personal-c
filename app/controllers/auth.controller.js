@@ -1,43 +1,28 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const User = require('../models/userModel');
+const authService = require('../services/auth.service');
 const { sendResponse } = require('../helpers');
-const userService = require('../services/user.service');
-const RefreshToken = require('../models/refreshToken.model');
 
 const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check if user exists
-    const user = await userService.getUserByEmail(email);
+    const user = await User.findOne({ where: { email } });
+
     if (!user) {
-      sendResponse(res, 401, { message: 'Invalid credentials' });
-      return;
+      return sendResponse(res, 401, { message: 'Invalid email or password' });
+    }
+    const isMatch = await authService.comparePasswords(password, user.password);
+    if (!isMatch) {
+      return sendResponse(res, 401, { message: 'Invalid email or password' });
     }
 
-    // Check if password is correct
-    const passwordMatches = await bcrypt.compare(password, user.password);
-    if (!passwordMatches) {
-      sendResponse(res, 401, { message: 'Invalid credentials' });
-      return;
-    }
+    const accessToken = authService.generateAccessToken({ id: user.id });
+    const refreshToken = await authService.generateRefreshToken({ id: user.id });
 
-    // Generate access token
-    const accessToken = jwt.sign({ user: user.id }, process.env.JWT_SECRET, {
-      expiresIn: '15m',
-    });
-
-    // Generate refresh token
-    const refreshToken = jwt.sign({ user: user.id }, process.env.JWT_REFRESH_SECRET);
-
-    // Save refresh token to database
-    const newRefreshToken = new RefreshToken({ token: refreshToken });
-    await newRefreshToken.save();
-
-    // Send response with access token and refresh token
-    sendResponse(res, 200, { accessToken, refreshToken });
+    return sendResponse(res, 200, { accessToken, refreshToken });
   } catch (error) {
-    sendResponse(res, 500, { message: 'Server error' });
+    console.error(error);
+    return sendResponse(res, 500, { message: 'Server error' });
   }
 };
 

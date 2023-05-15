@@ -1,20 +1,51 @@
 const jwt = require('jsonwebtoken');
 const { sendResponse } = require('../helpers');
+const authService = require('../services/auth.service');
 
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
   const token = req.header('Authorization');
 
   if (!token) {
-    sendResponse(res, 401, { message: 'Unauthorized access' });
+    return sendResponse(res, 401, { message: 'Unauthorized access' });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = authService.verifyToken(token);
     req.user = decoded.user;
     next();
   } catch (error) {
-    sendResponse(res, 401, { message: 'Invalid token' });
+    return sendResponse(res, 401, { message: 'Invalid token' });
   }
 };
 
-module.exports = auth;
+const refresh = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return sendResponse(res, 401, { message: 'Unauthorized access' });
+  }
+
+  try {
+    const decoded = authService.verifyToken(refreshToken);
+    const user = decoded.user;
+
+    const savedToken = await RefreshToken.findOne({ where: { token: refreshToken } });
+    if (!savedToken) {
+      return sendResponse(res, 401, { message: 'Invalid refresh token' });
+    }
+
+    const accessToken = authService.generateAccessToken(user);
+    const newRefreshToken = await authService.generateRefreshToken(user);
+    savedToken.token = newRefreshToken;
+    await savedToken.save();
+
+    return sendResponse(res, 200, { accessToken, refreshToken: newRefreshToken });
+  } catch (error) {
+    return sendResponse(res, 401, { message: 'Invalid token' });
+  }
+};
+
+module.exports = {
+  auth,
+  refresh,
+};
