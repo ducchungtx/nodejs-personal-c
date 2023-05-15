@@ -1,0 +1,14 @@
+{
+  "name": "nodejs-core",
+  "version": "1.0.0",
+  "main": "app.js",
+  "author": "Chung Nguyen",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "dotenv": "^16.0.3",
+    "jsonwebtoken": "^9.0.0",
+    "mysql2": "^3.3.1",
+    "sequelize": "^6.31.1"
+  }
+}
