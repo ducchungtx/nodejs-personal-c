@@ -4,7 +4,7 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const helmet = require('helmet');
-const sequelize = require('./config/db');
+const sequelize = require('../config/db');
 const routes = require('./routes');
 
 const app = express();
@@ -41,3 +41,10 @@ sequelize
   .catch(err => {
     console.error('Unable to connect to the database:', err);
   });
+
+
+// Ctrl + C
+process.on('SIGINT', () => {
+  server.close(() => console.log(`Exit Server`));
+  // notify something example server crash
+});
